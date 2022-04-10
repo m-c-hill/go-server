@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"net"
+	"time"
 )
 
 func main() {
+	// Listen, accept, read/write
 	li, err := net.Listen("tcp", ":8080")
 
 	if err != nil {
@@ -20,10 +22,23 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
-
-		io.WriteString(conn, "\nHello from TCP server\n")
-		fmt.Fprintln(conn, "Test message")
-
-		conn.Close()
+		go handle(conn)
 	}
+}
+
+func handle(conn net.Conn) {
+	// Close connection after 10 seconds
+	err := conn.SetDeadline(time.Now().Add(10 * time.Second))
+	if err != nil {
+		log.Println("CONN TIMEOUT")
+	}
+	scanner := bufio.NewScanner(conn)
+	for scanner.Scan() {
+		ln := scanner.Text()
+		fmt.Println(ln)
+		fmt.Fprintf(conn, "I heard you say: %s\n", ln)
+	}
+	defer conn.Close()
+
+	fmt.Println("Code got here.")
 }
